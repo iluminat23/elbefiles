@@ -1,0 +1,359 @@
+<!DOCTYPE e [ <!ENTITY pkglist-stage0 SYSTEM "armhf-raspios-stage0-pkglist.xml">
+	<!ENTITY finetuning-stage0 SYSTEM "armhf-raspios-stage0-finetuning.sh">
+	<!ENTITY pkglist-stage1 SYSTEM "armhf-raspios-stage1-pkglist.xml">
+	<!ENTITY finetuning-stage1 SYSTEM "armhf-raspios-stage1-finetuning.sh">
+	<!ENTITY pkglist-stage2 SYSTEM "armhf-raspios-stage2-pkglist.xml">
+	<!ENTITY finetuning-stage2 SYSTEM "armhf-raspios-stage2-finetuning.sh">]>
+<ns0:RootFileSystem xmlns:ns0="https://www.linutronix.de/projects/Elbe" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" created="2009-05-20T08:50:56" revision="6" xsi:schemaLocation="https://www.linutronix.de/projects/Elbe dbsfed.xsd">
+	<initvm>
+		<buildtype>amd64</buildtype>
+		<mirror>
+			<primary_host>ftp.de.debian.org</primary_host>
+			<primary_path>/debian</primary_path>
+			<primary_proto>http</primary_proto>
+			<url-list>
+				<url>
+					<binary>
+						http://security.debian.org/debian-security buster/updates main
+					</binary>
+					<source>
+						http://security.debian.org/debian-security buster/updates main
+					</source>
+				</url>
+				<url>
+					<binary>
+						http://ftp.debian.org/debian buster-backports main
+					</binary>
+					<source>
+						http://ftp.debian.org/debian buster-backports main
+					</source>
+				</url>
+				<url>
+					<binary>
+						http://debian.linutronix.de/elbe buster main
+					</binary>
+					<source>
+						http://debian.linutronix.de/elbe buster main
+					</source>
+					<key>
+						http://debian.linutronix.de/elbe/elbe-repo.pub
+					</key>
+				</url>
+				<url>
+					<binary>
+						http://debian.linutronix.de/elbe-common buster main
+					</binary>
+					<source>
+						http://debian.linutronix.de/elbe-common buster main
+					</source>
+					<key>
+						http://debian.linutronix.de/elbe-common/elbe-repo.pub
+					</key>
+				</url>
+			</url-list>
+		</mirror>
+		<suite>buster</suite>
+		<pkg-list>
+			<pkg pin="buster-backports">qemu-user-static</pkg>
+			<pkg>openssh-server</pkg>
+			<pkg>debootstrap</pkg>
+			<pkg>pbuilder</pkg>
+		</pkg-list>
+		<finetuning>
+			<command>
+				wget https://archive.raspbian.org/raspbian.public.key -O - | gpg --no-default-keyring --keyring=/usr/share/keyrings/debian-archive-keyring.gpg --import
+			</command>
+		</finetuning>
+		<preseed>
+		<!-- FIXME: WTF? why use ftp.de.debian.org here?-->
+			<conf owner="pbuilder" key="pbuilder/mirrorsite" type="string" value="http://ftp.de.debian.org/debian"/>
+		</preseed>
+		<size>80G</size>
+		<swap-size>10GiB</swap-size>
+		<img>qcow2</img>
+		<portforwarding>
+		</portforwarding>
+	</initvm>
+
+	<project>
+		<!-- human readable description of the project -->
+		<name>armhf-raspios</name>
+		<version>1.0</version>
+		<description>
+			buster rootfs for revolutionpi devices
+		</description>
+		<!-- buildtype is used to configure qemu-user and debian arch -->
+		<buildtype>armhf</buildtype>
+		<mirror>
+			<!-- primary mirror is used by debootstrap -->
+			<primary_host>raspbian.raspberrypi.org</primary_host>
+			<primary_path>raspbian</primary_path>
+			<primary_proto>http</primary_proto>
+			<url-list>
+				<url>
+					<binary>http://raspbian.raspberrypi.org/raspbian buster contrib non-free rpi</binary>
+					<source>http://raspbian.raspberrypi.org/raspbian buster main contrib non-free rpi</source>
+					<key>http://raspbian.raspberrypi.org/raspbian.public.key</key>
+				</url>
+				<url>
+					<binary>http://archive.raspberrypi.org/debian buster main ui</binary>
+					<source>http://archive.raspberrypi.org/debian buster main ui</source>
+					<key>http://archive.raspberrypi.org/debian/raspberrypi.gpg.key</key>
+				</url>
+			</url-list>
+		</mirror>
+
+		<suite>buster</suite>
+	</project>
+	<target>
+		<!-- content for /etc/hostname -->
+		<hostname>raspberrypi</hostname>
+		<!-- content for /etc/domainname -->
+		<domain>raspberrypi.org</domain>
+		<!-- root password -->
+		<passwd>root</passwd>
+		<!-- run a getty here: -->
+		<console>ttyS0,115200</console>
+		<!-- speed up build with debootstrap variant minbase.
+		Using minbase here and explicit install of systemd later
+		on speed up the installation process, since it reduces
+		the emulated part (run in QEMU) of the installation
+		significant.
+		-->
+		<package>
+			<!-- build a tarball of the target image -->
+			<tar>
+				<name>armhf-raspios.tgz</name>
+			</tar>
+		</package>
+		<!-- define an sdcard image -->
+		<images>
+			<msdoshd>
+				<!-- name of the image file -->
+				<name>armhf-raspios.img</name>
+				<size>3700MiB</size>
+					<!-- partition layout -->
+					<partition>
+						<size>50MiB</size>
+						<!-- label needs to match with the fstab entry below -->
+						<label>boot</label>
+						<bootable/>
+					</partition>
+					<partition>
+						<size>remain</size>
+						<label>rfs</label>
+					</partition>
+			</msdoshd>
+		</images>
+		<fstab>
+			<bylabel>
+				<!-- label needs to match with an image entry aboth -->
+				<label>rfs</label>
+				<mountpoint>/</mountpoint>
+				<fs>
+					<!-- fs type and options -->
+					<type>ext2</type>
+					<tune2fs>-i 0</tune2fs>
+				</fs>
+			</bylabel>
+			<bylabel>
+				<label>boot</label>
+				<mountpoint>/boot</mountpoint>
+				<fs>
+					<type>vfat</type>
+				</fs>
+			</bylabel>
+		</fstab>
+
+		<pkg-list>
+			&pkglist-stage0;
+			&pkglist-stage1;
+			&pkglist-stage2;
+		</pkg-list>
+		<finetuning>
+			<!--
+				stage0: https://github.com/RPi-Distro/pi-gen/tree/2021-05-07-raspbian-buster/stage0
+			-->
+			<command>&finetuning-stage0;</command>
+
+			<!--
+				stage1: https://github.com/RPi-Distro/pi-gen/tree/2021-05-07-raspbian-buster/stage1
+			-->
+			<!-- TODO/FIXME: check if this is correct -->
+			<adduser shell="/bin/bash" home="/home/pi" create_group = "true" passwd="raspberry" groups="adm,dialout,cdrom,sudo,audio,video,plugdev,games,users,input,netdev,i2c">pi</adduser>
+			<command>&finetuning-stage0;</command>
+			<!-- 02-net-tweaks -->
+			<ln path="/dev/null">/etc/systemd/network/99-default.link</ln>
+
+			<!--
+				stage2: https://github.com/RPi-Distro/pi-gen/tree/2021-05-07-raspbian-buster/stage2
+			-->
+			<!-- 00-copies-and-fills -->
+			<!-- FIXME: This is just a woraround, to keep the log clean from useless warnings:-->
+			<mv path="/etc/ld.so.preload">/etc/ld.so.preload.disabled</mv>
+			<!-- 01-sys-tweaks -->
+			<command>debconf-set-selections stage2/01-sys-tweaks/00-debconf</command>
+			<!-- TODO: patches: https://github.com/RPi-Distro/pi-gen/tree/2021-05-07-raspbian-buster/stage2/01-sys-tweaks/00-patches -->
+			<command>install -m 755 stage2/01-sys-tweaks/resize2fs_once /etc/init.d/</command>
+			<mkdir>/etc/systemd/system/rc-local.service.d</mkdir>
+			<command>install -m 644 stage2/01-sys-tweaks/ttyoutput.conf /etc/systemd/system/rc-local.service.d/</command>
+			<command>install -m 644 stage2/01-sys-tweaks/50raspi /etc/apt/apt.conf.d/</command>
+			<command>install -m 644 stage2/01-sys-tweaks/console-setup /etc/default/</command>
+			<command>install -m 755 stage2/01-sys-tweaks/rc.local /etc/</command>
+			<command>systemctl disable hwclock.sh</command>
+			<command>systemctl disable nfs-common</command>
+			<command>systemctl disable rpcbind</command>
+			<!-- FIXME: why do we regenerate the host keys when we remove them later? -->
+			<command>systemctl enable regenerate_ssh_host_keys</command>
+			<command>systemctl enable resize2fs_once</command>
+			<!-- TODO: why do we need this? -->
+			<command>setupcon --force --save-only -v</command>
+			<command>usermod --pass='*' root</command>
+			<!-- FIXME does this work? The * might be an issue -->
+			<command>rm -f /etc/ssh/"ssh_host_*_key*</command>
+			<!-- 02-net-tweaks -->
+			<mkdir>/etc/systemd/system/dhcpcd.service.d</mkdir>
+			<command>install -v -m 644 stage2/02-net-tweaks/wait.conf /etc/systemd/system/dhcpcd.service.d/</command>
+			<mkdir>/etc/wpa_supplicant</mkdir>
+			<command>install -v -m 600 stage2/02-net-tweaks/wpa_supplicant.conf /etc/wpa_supplicant/</command>
+			<mkdir>/var/lib/systemd/rfkill/</mkdir>
+			<!-- FIXME: I don't think the > operator will work here -->
+			<command>echo 0 > /var/lib/systemd/rfkill/platform-3f300000.mmcnr:wlan</command>
+			<command>echo 0 > /var/lib/systemd/rfkill/platform-fe300000.mmcnr:wlan</command>
+			<!-- 03-accept-mathematica-eula -->
+			<command>debconf-set-selections stage2/03-accept-mathematica-eula/00-debconf</command>
+			
+
+
+
+
+
+
+
+
+
+			<!-- set SKEL to /etc/skel to make the bash configuration files be copied to home of new users -->
+			<command>sed -i "s/# SKEL=\/etc\/skel/SKEL=\/etc\/skel/g" /etc/default/useradd</command>
+			<adduser shell="/bin/bash" home="/home/pi" create_group = "true" passwd="raspberry" groups="adm,dialout,cdrom,sudo,audio,video,plugdev,games,users,input,netdev,i2c">pi</adduser>
+
+			<!-- install packages which are failed at pkg-list inst stage because of licences problem -->
+			<command>apt update</command>
+
+			<!-- The following packages can be removed when comatition with image from imagebakery is not needed.-->
+			<command>apt install -y wiringpi sense-hat rpi-update raspberrypi-artwork raspberrypi-net-mods</command>
+			<command>apt purge -y gcc-7-base gcc-6-base gcc-5-base gcc-4.9-base libboost-iostreams1.58.0 libegl1-mesa</command>
+
+			<!-- copy piTest source code -->
+			<command>
+				PICONTROLDIR=`mktemp -d -p /tmp piControl.XXXXXXXX`;
+				git clone https://github.com/RevolutionPi/piControl $PICONTROLDIR;
+				cp -pr $PICONTROLDIR/piTest /home/pi/demo;
+				cp -p $PICONTROLDIR/piControl.h /home/pi/demo;
+				sed -i -r -e 's%\.\./%%' /home/pi/demo/Makefile;
+				chown -R pi:pi /home/pi/demo;
+				chmod -R a+rX /home/pi/demo;
+				rm -r $PICONTROLDIR
+			</command>
+
+			<command>
+				# configure the time zone as "Europe/Berlin"
+				sed -i "1c\Europe/Berlin" /etc/timezone;
+				# remove the symbolic link to make the timezone on duty
+				# https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=813226#10
+				rm /etc/localtime;
+				dpkg-reconfigure -fnoninteractive tzdata;
+			</command>
+
+			<!-- config the keyboard, and apply it -->
+			<command>
+				sed -i -r -e 's/^(XKBMODEL).*/\1="pc104"/' \
+					-e 's/^(XKBLAYOUT).*/\1="us"/' \
+					-e 's/^(XKBVARIANT).*/\1=""/' \
+					/etc/default/keyboard;
+				dpkg-reconfigure -fnoninteractive keyboard-configuration;
+			</command>
+
+			<!-- config the locale, and apply it -->
+			<command>
+				sed -i -r -e '1aLANG=en_US.UTF-8' /etc/default/locale;
+				sed -i -r -e 's/^(# en_US.UTF-8 UTF-8)/en_US.UTF-8 UTF-8/' /etc/locale.gen;
+				dpkg-reconfigure -fnoninteractive locales;
+			</command>
+
+			<command>install -d -m 700 -o pi -g pi /home/pi/.ssh</command>
+
+			<!-- automatically bring up eth0 and eth1 again after a USB bus reset -->
+			<command>sed -i -e '6i# allow-hotplug eth0\n# allow-hotplug eth1\n' /etc/network/interfaces</command>
+
+			<command>echo -e " # Prioritize wlan0 routes over eth0 routes.\n interface wlan0\n \tmetric 100\n" >> /etc/dhcpcd.conf</command>
+
+			<!--  display IP address at login prompt-->
+			<command>sed -i -e '1s/$/ \\4 \\6/' /etc/issue</command>
+
+			<!--  configure apache2-->
+			<command>
+				a2enmod ssl;
+				sed -r -i -e 's/^(\tOptions .*Indexes.*)/#\1/' /etc/apache2/apache2.conf
+			</command>
+
+			<!-- # enable ssh daemon by default, disable swap, disable bluetooth on mini-uart -->
+			<command>
+				systemctl enable ssh;
+				systemctl disable dphys-swapfile;
+				systemctl disable hciuart;
+			</command>
+
+			<!-- # boot to console by default, disable autologin -->
+			<command>systemctl set-default multi-user.target</command>
+
+			<command>
+				if [ -e /etc/lightdm/lightdm.conf ] ; then
+					sed -r -i -e "s/^autologin-user=/#autologin-user=/" /etc/lightdm/lightdm.conf;
+				fi
+			</command>
+
+			<ln path="/lib/systemd/system/getty@.service">/etc/systemd/system/getty.target.wants/getty@tty1.service</ln>
+
+			<!-- shrink target image -->
+			<rm>/var/cache/apt/archives/*.deb</rm>
+			<rm>/var/cache/apt/*.bin</rm>
+			<rm>/var/lib/apt/lists/ftp*</rm>
+
+			<!-- remove package lists, they will be outdated within days-->
+			<rm> /var/lib/apt/lists/*Packages</rm>
+
+			<!-- remove logs and ssh host keys -->
+			<rm> /var/log/* </rm>
+			<rm> /etc/ssh/ssh_host_*_key* </rm>
+
+			<!--  autologin.conf enables autologin in raspios and raspios-full but not in raspios-lite -->
+			<rm> /etc/systemd/system/getty@tty1.service.d/autologin.conf </rm>
+
+			<command>
+				sed -r -i -e 's/delaycompress/#delaycompress/'  /etc/logrotate.d/rsyslog;
+				sed -r -i -e 's/sharedscripts/#sharedscripts/' /etc/logrotate.d/rsyslog;
+				sed -r -i -e 's/#compress/compress/' /etc/logrotate.conf;
+				sed -r -i -e '2i \
+\
+# limit size of each log file\
+maxsize 10M\
+\
+# compress harder\
+compresscmd /usr/bin/nice\
+compressoptions /usr/bin/xz\
+compressext .xz\
+uncompresscmd /usr/bin/unxz' /etc/logrotate.conf;
+
+			</command>
+			<ln path="/dev/null">/etc/systemd/network/99-default.link</ln>
+			<command>&finetuning;</command>
+		</finetuning>
+		<pbuilder>
+			<git revision="HEAD">https://github.com/zhan-kunbus/boot-conf.git</git>
+			<git revision="HEAD">https://github.com/zhan-kunbus/raspi-config.git</git>
+			<git revision="HEAD">https://github.com/zhan-kunbus/xserver-xorg-video-fbturbo.git</git>
+			<git revision="HEAD">https://github.com/zhan-kunbus/shared-mime-info.git</git>
+		</pbuilder>
+	</target>
+	<archivedir>armhf-raspios-archive/</archivedir>
+</ns0:RootFileSystem>

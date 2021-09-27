@@ -1,0 +1,6 @@
+<!-- https://github.com/RPi-Distro/pi-gen/blob/2021-05-07-raspbian-buster/stage1/02-net-tweaks/00-packages -->
+<pkg>netbase</pkg>
+<!-- https://github.com/RPi-Distro/pi-gen/blob/2021-05-07-raspbian-buster/stage1/03-install-packages/00-packages -->
+<pkg>libraspberrypi-bin</pkg>
+<pkg>libraspberrypi0</pkg>
+<pkg>raspi-config</pkg>

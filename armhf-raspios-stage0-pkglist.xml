@@ -1,0 +1,5 @@
+<!-- https://github.com/RPi-Distro/pi-gen/blob/2021-05-07-raspbian-buster/stage0/01-locale/00-packages -->
+<pkg>locales<pkg>
+<!-- https://github.com/RPi-Distro/pi-gen/blob/2021-05-07-raspbian-buster/stage0/02-firmware/01-packages -->
+<pkg>raspberrypi-bootloader<pkg>
+<pkg>raspberrypi-kernel<pkg>
